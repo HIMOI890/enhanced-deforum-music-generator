@@ -1,0 +1,6 @@
+# Enhanced Deforum Music Generator (A1111 Extension) dependencies
+# Keep torch out of here: A1111 manages torch itself.
+numpy
+soundfile
+librosa
+openai-whisper
