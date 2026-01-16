@@ -19,6 +19,32 @@ from pathlib import Path
 from typing import Dict, List, Optional
 import argparse
 
+SETUPTOOLS_COMMANDS = {
+    "egg_info",
+    "dist_info",
+    "build",
+    "build_ext",
+    "bdist_wheel",
+    "sdist",
+    "develop",
+    "editable_wheel",
+}
+
+def _argv_contains_setuptools_command(argv: list[str]) -> bool:
+    return any(arg in SETUPTOOLS_COMMANDS for arg in argv)
+
+
+def maybe_run_setuptools(argv: list[str] | None = None) -> bool:
+    """Run setuptools when invoked by build backends."""
+    check_argv = argv or sys.argv
+    if _argv_contains_setuptools_command(check_argv):
+        from setuptools import setup
+
+        setup()
+        return True
+    return False
+
+
 class SetupManager:
     """Manages the complete setup process."""
     
@@ -628,7 +654,13 @@ Examples:
     parser.add_argument("--create-config", action="store_true",
                        help="Only create configuration files")
     
-    args = parser.parse_args()
+    args, unknown_args = parser.parse_known_args()
+
+    if unknown_args and _argv_contains_setuptools_command(unknown_args):
+        from setuptools import setup
+
+        setup()
+        return
     
     setup_manager = SetupManager()
     
@@ -655,4 +687,5 @@ Examples:
 
 
 if __name__ == "__main__":
-    main()
+    if not maybe_run_setuptools(sys.argv):
+        main()
