@@ -39,6 +39,19 @@ class LyricsConfig:
 
 
 @dataclass
+class AIConfig:
+    """AI provider configuration for prompt generation."""
+    enabled: bool = False
+    provider: str = "ollama"  # openai, ollama, llamacpp, transformers
+    model: str = "llama3.1:8b"
+    base_url: str = "http://localhost:11434"
+    api_key_env: str = "OPENAI_API_KEY"
+    timeout: int = 60
+    temperature: float = 0.4
+    max_tokens: int = 800
+
+
+@dataclass
 class AnimationConfig:
     """Animation generation configuration."""
     fps: int = 30
@@ -133,6 +146,7 @@ class Config:
     """Master configuration class."""
     audio: AudioConfig = field(default_factory=AudioConfig)
     lyrics: LyricsConfig = field(default_factory=LyricsConfig)
+    ai: AIConfig = field(default_factory=AIConfig)
     animation: AnimationConfig = field(default_factory=AnimationConfig)
     a1111: A1111Config = field(default_factory=A1111Config)
     cloud: CloudConfig = field(default_factory=CloudConfig)
@@ -207,7 +221,7 @@ class Config:
         config = cls()
         
         # Update each section
-        for section_name in ["audio", "lyrics", "animation", "a1111", "cloud", "advanced", "interface", "logging"]:
+        for section_name in ["audio", "lyrics", "ai", "animation", "a1111", "cloud", "advanced", "interface", "logging"]:
             if section_name in data:
                 section_obj = getattr(config, section_name)
                 section_data = data[section_name]
