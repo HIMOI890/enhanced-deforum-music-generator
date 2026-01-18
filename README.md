@@ -72,3 +72,7 @@ The installer will copy it into:
 
 - This project installs Python dependencies but does **not** install GPU drivers.
 - First run of A1111 can take time (it creates its own venv and installs deps).
+
+## Documentation
+
+- [AI integration design (API + local providers)](docs/AI_INTEGRATION.md)

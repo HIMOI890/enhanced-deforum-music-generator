@@ -83,28 +83,27 @@ class AudioAnalyzer:
         logger.info(f"Analysis complete: {features.duration:.2f}s, {features.tempo:.1f} BPM, {len(features.beats)} beats")
         return features
 
+    def analyze(self, audio_path: str, enable_cache: bool = True) -> Dict[str, Any]:
+        """
+        Analyze audio and return a JSON-serializable dictionary.
 
+        This wrapper keeps unit-tests (and the UI) simple while preserving the
+        full-featured `analyze_features()` API.
+        """
+        features = self.analyze_features(audio_path, enable_cache=enable_cache)
+        return {
+            "duration": float(features.duration),
+            "sample_rate": int(features.sample_rate),
+            "tempo": float(features.tempo),
+            "beats": list(features.beats),
+            "energy": list(features.energy),
+            "onset_strength": list(features.onset_strength),
+            "onset_times": list(features.onset_times),
+            "spectral_centroid": list(features.spectral_centroid),
+            "spectral_rolloff": list(features.spectral_rolloff),
+            "rms_energy": list(features.rms_energy),
+        }
 
-def analyze(self, audio_path: str, enable_cache: bool = True) -> Dict[str, Any]:
-    """
-    Analyze audio and return a JSON-serializable dictionary.
-
-    This wrapper keeps unit-tests (and the UI) simple while preserving the
-    full-featured `analyze_features()` API.
-    """
-    features = self.analyze_features(audio_path, enable_cache=enable_cache)
-    return {
-        "duration": float(features.duration),
-        "sample_rate": int(features.sample_rate),
-        "tempo": float(features.tempo),
-        "beats": list(features.beats),
-        "energy": list(features.energy),
-        "onset_strength": list(features.onset_strength),
-        "onset_times": list(features.onset_times),
-        "spectral_centroid": list(features.spectral_centroid),
-        "spectral_rolloff": list(features.spectral_rolloff),
-        "rms_energy": list(features.rms_energy),
-    }
     def _load_audio(self, audio_path: Path) -> Tuple[np.ndarray, int]:
         """Load and preprocess audio file."""
         try:
@@ -116,11 +115,11 @@ def analyze(self, audio_path: str, enable_cache: bool = True) -> Dict[str, Any]:
             )
             
             # Apply noise reduction if enabled
-            if self.config.enable_noise_reduction:
+            if getattr(self.config, "enable_noise_reduction", False):
                 y = self._reduce_noise(y)
                 
             # Normalize audio if enabled
-            if self.config.normalize_audio:
+            if getattr(self.config, "normalize_audio", False):
                 y = librosa.util.normalize(y)
                 
             logger.debug(f"Loaded audio: {len(y)} samples, {sr} Hz, {len(y)/sr:.2f}s")
@@ -161,7 +160,7 @@ def analyze(self, audio_path: str, enable_cache: bool = True) -> Dict[str, Any]:
         
         # Beat tracking
         tempo, beat_frames = librosa.beat.beat_track(
-            y=y, sr=sr, units=self.config.beat_track_units
+            y=y, sr=sr, units=getattr(self.config, "beat_track_units", "time")
         )
         beat_times = librosa.frames_to_time(beat_frames, sr=sr)
         

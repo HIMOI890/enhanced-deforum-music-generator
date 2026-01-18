@@ -91,6 +91,14 @@ except Exception:
     requests = None
     _REQ_OK = False
 
+try:
+    from .core.ai_providers import AIProviderConfig, build_ai_provider
+    _AI_PROVIDER_OK = True
+except Exception:
+    AIProviderConfig = None
+    build_ai_provider = None
+    _AI_PROVIDER_OK = False
+
 
 # ---------------------------------------------------------------------------
 # Data container returned on enhanced analysis
@@ -422,18 +430,40 @@ class EnhancedNLPAnalyzer:
 class AIPromptGenerator:
     """Generates cinematic prompts via Claude API with a deterministic fallback.
 
-    The generator is model-agnostic and only requires an API key if cloud mode
-    is desired. When unavailable, it synthesizes high-quality prompts locally
-    using the analysis data.
+    The generator supports optional AI provider backends (OpenAI-compatible,
+    Ollama, llama.cpp, HuggingFace Transformers) with a deterministic fallback.
+    When unavailable, it synthesizes high-quality prompts locally using the
+    analysis data.
     """
 
-    def __init__(self, anthropic_api_key: Optional[str] = None, model: str = "claude-3-5-sonnet-20240620"):
+    def __init__(
+        self,
+        anthropic_api_key: Optional[str] = None,
+        model: str = "claude-3-5-sonnet-20240620",
+        provider: str = "claude",
+        provider_config: Optional[Dict[str, Any]] = None,
+    ):
         self.api_key = anthropic_api_key or os.getenv("ANTHROPIC_API_KEY")
         self.model = model
+        self.provider = provider
+        self._provider = None
+        self._provider_error = None
+        if provider != "claude" and _AI_PROVIDER_OK and build_ai_provider and AIProviderConfig:
+            try:
+                config_data = dict(provider_config or {})
+                config_data.setdefault("provider", provider)
+                self._provider = build_ai_provider(AIProviderConfig(**config_data))
+            except Exception as exc:
+                self._provider_error = str(exc)
 
     # Public API
     def generate(self, analysis: Any, lyrics: LyricsAnalysis, num_prompts: int = 6) -> List[str]:
-        if self.api_key and _REQ_OK:
+        if self._provider:
+            prompt = self._compose_ai_request_text(analysis, lyrics, num_prompts)
+            prompts = self._provider.generate_prompts(prompt, num_prompts)
+            if prompts:
+                return prompts
+        if self.provider in {"claude", "anthropic"} and self.api_key and _REQ_OK:
             prompts = self._call_claude_http(analysis, lyrics, num_prompts)
             if prompts:
                 return prompts
@@ -570,6 +600,8 @@ def integrate_enhanced_nlp(BaseAnalyzerClass: Any):
     Additional kwargs supported:
     - enable_ai_prompts: bool = False
     - claude_api_key: Optional[str] = None  (also read from env ANTHROPIC_API_KEY)
+    - ai_provider: str = "claude"
+    - ai_provider_config: Optional[Dict[str, Any]] = None
     - theme_labels: Optional[List[str]]
     - spacy_model: str = "en_core_web_sm"
 
@@ -582,10 +614,23 @@ def integrate_enhanced_nlp(BaseAnalyzerClass: Any):
     """
 
     class EnhancedAudioAnalyzer(BaseAnalyzerClass):  # type: ignore[misc]
-        def __init__(self, *args: Any, claude_api_key: Optional[str] = None, spacy_model: str = "en_core_web_sm", theme_labels: Optional[List[str]] = None, **kwargs: Any) -> None:
+        def __init__(
+            self,
+            *args: Any,
+            claude_api_key: Optional[str] = None,
+            spacy_model: str = "en_core_web_sm",
+            theme_labels: Optional[List[str]] = None,
+            ai_provider: str = "claude",
+            ai_provider_config: Optional[Dict[str, Any]] = None,
+            **kwargs: Any,
+        ) -> None:
             super().__init__(*args, **kwargs)
             self._nlp_analyzer = EnhancedNLPAnalyzer(spacy_model=spacy_model, theme_labels=theme_labels)
-            self._ai_prompter = AIPromptGenerator(anthropic_api_key=claude_api_key)
+            self._ai_prompter = AIPromptGenerator(
+                anthropic_api_key=claude_api_key,
+                provider=ai_provider,
+                provider_config=ai_provider_config,
+            )
 
         def analyze(self, audio_path: str, enable_lyrics: bool = False, enable_ai_prompts: bool = False, **kwargs: Any):  # type: ignore[override]
             # Run the base analysis first
