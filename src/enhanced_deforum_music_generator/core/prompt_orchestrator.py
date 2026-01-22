@@ -121,7 +121,6 @@ class PromptOrchestrator:
         return {"fps": fps, "scene_plan": scene_plan, "prompts": prompts, "negative_prompts": neg_prompts}
 
     def _ai_scene_plan(self, *, base: str, mood: str, keywords: List[str], n: int) -> List[Dict[str, Any]]:
-        # Provider API contract: provider.complete(prompt, max_tokens=...)
         req = {
             "base_prompt": base,
             "mood": mood,
@@ -129,21 +128,31 @@ class PromptOrchestrator:
             "n_scenes": n,
         }
         prompt = (
-            "Create a JSON array of scene objects for a music video prompt schedule. "
-            "Each object must have keys: title, prompt. "
-            "No markdown. JSON only. Input: " + json.dumps(req)
+            "Generate a list of scene prompts for a music video schedule. "
+            "Return only the prompts (no numbering or extra text). "
+            "Input: " + json.dumps(req)
         )
-        txt = self.provider.complete(prompt, max_tokens=512)
-        # extract JSON array
-        import re
-        m = re.search(r"\[[\s\S]*\]", txt)
-        if not m:
-            return []
-        arr = json.loads(m.group(0))
-        if not isinstance(arr, list):
-            return []
-        out=[]
-        for x in arr:
-            if isinstance(x, dict) and "prompt" in x:
-                out.append({"title": str(x.get("title","scene")), "prompt": str(x["prompt"])})
-        return out[:n]
+
+        # Prefer provider.generate_prompts if available (AIProvider interface).
+        if hasattr(self.provider, "generate_prompts"):
+            prompts = self.provider.generate_prompts(prompt, n)  # type: ignore[attr-defined]
+            if prompts:
+                return [{"title": f"scene {i+1}", "prompt": str(p)} for i, p in enumerate(prompts[:n])]
+
+        # Legacy fallback: provider.complete returning JSON array of objects.
+        if hasattr(self.provider, "complete"):
+            txt = self.provider.complete(prompt, max_tokens=512)  # type: ignore[attr-defined]
+            import re
+            m = re.search(r"\[[\s\S]*\]", txt)
+            if not m:
+                return []
+            arr = json.loads(m.group(0))
+            if not isinstance(arr, list):
+                return []
+            out: List[Dict[str, Any]] = []
+            for x in arr:
+                if isinstance(x, dict) and "prompt" in x:
+                    out.append({"title": str(x.get("title", "scene")), "prompt": str(x["prompt"])})
+            return out[:n]
+
+        return []

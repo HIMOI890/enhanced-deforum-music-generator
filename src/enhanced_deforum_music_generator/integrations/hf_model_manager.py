@@ -91,13 +91,12 @@ def download_model_snapshot(
     local_dir = snapshot_download(
         repo_id=repo_id,
         local_dir=str(dest_dir),
-        local_dir_use_symlinks=False,
         revision=revision,
         token=get_hf_token(token),
         allow_patterns=list(allow_patterns) if allow_patterns else None,
         ignore_patterns=list(ignore_patterns) if ignore_patterns else None,
-        resume_download=True,
     )
+
     return Path(local_dir)
 
 

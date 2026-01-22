@@ -10,7 +10,7 @@ It deliberately avoids importing the full standalone implementation at import ti
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Dict, List, Mapping
 
 from .deforum_defaults import deep_merge_dicts, make_deforum_settings_template
 
@@ -26,10 +26,6 @@ class AudioAnalysis:
     filepath: str = ""
     duration: float = 0.0
     tempo_bpm: float = 0.0
-<<<<<<< HEAD
-    beat_frames: List[float] = field(default_factory=list)
-    energy_segments: List[float] = field(default_factory=list)
-=======
 
     # Canonical fields used across the codebase
     beats: List[float] = field(default_factory=list)
@@ -45,7 +41,6 @@ class AudioAnalysis:
             self.beats = list(self.beat_frames)
         if (not self.energy) and self.energy_segments:
             self.energy = list(self.energy_segments)
->>>>>>> 3595d08 (Initial import)
 
 
 def _coerce_int(v: Any, default: int) -> int:
@@ -66,24 +61,19 @@ def _normalize_user_overrides(user_settings: Mapping[str, Any]) -> Dict[str, Any
     """Map common synonyms into Deforum schema keys."""
     overrides: Dict[str, Any] = {}
 
+    # Prefer SDXL-ish defaults unless user overrides
     if "W" in user_settings or "width" in user_settings:
-<<<<<<< HEAD
         overrides["W"] = _coerce_int(user_settings.get("W", user_settings.get("width")), 1024)
+    else:
+        overrides["W"] = 1024
 
     if "H" in user_settings or "height" in user_settings:
         overrides["H"] = _coerce_int(user_settings.get("H", user_settings.get("height")), 576)
+    else:
+        overrides["H"] = 576
 
     if "fps" in user_settings:
         overrides["fps"] = _coerce_int(user_settings.get("fps"), 24)
-=======
-        overrides["W"] = _coerce_int(user_settings.get("W", user_settings.get("width")), 1280)
-
-    if "H" in user_settings or "height" in user_settings:
-        overrides["H"] = _coerce_int(user_settings.get("H", user_settings.get("height")), 720)
-
-    if "fps" in user_settings:
-        overrides["fps"] = _coerce_int(user_settings.get("fps"), 30)
->>>>>>> 3595d08 (Initial import)
 
     if "steps" in user_settings:
         overrides["steps"] = _coerce_int(user_settings.get("steps"), 30)
@@ -144,12 +134,18 @@ class DeforumMusicGenerator:
         settings["prompts"] = {"0": combined}
 
         # Optional: AI prompt orchestration (kept off by default)
-        if bool(user_settings.get("ai_orchestrate") or user_settings.get("enable_prompt_orchestration") or user_settings.get("prompt_orchestrate")):
+        if bool(
+            user_settings.get("ai_orchestrate")
+            or user_settings.get("enable_prompt_orchestration")
+            or user_settings.get("prompt_orchestrate")
+        ):
             try:
                 from .core.prompt_orchestrator import PromptOrchestrator
+
                 provider = None
                 if bool(user_settings.get("ai_use_provider")):
                     from .core.ai_providers import AIProviderConfig, build_ai_provider
+
                     cfg = AIProviderConfig(
                         provider=str(user_settings.get("ai_provider") or "openai"),
                         model=str(user_settings.get("ai_model") or "gpt-4o-mini"),
@@ -157,6 +153,7 @@ class DeforumMusicGenerator:
                         api_key=user_settings.get("ai_api_key") or None,
                     )
                     provider = build_ai_provider(cfg)
+
                 orch = PromptOrchestrator(provider=provider)
                 out = orch.orchestrate(
                     analysis,
@@ -167,17 +164,24 @@ class DeforumMusicGenerator:
                 )
                 prompts = out.get("prompts") or {"0": combined}
                 settings["prompts"] = {str(k): str(v) for k, v in prompts.items()}
+
                 negs = out.get("negative_prompts") or {}
                 if negs:
                     settings["negative_prompts"] = {str(k): str(v) for k, v in negs.items()}
+
                 settings["_edmg_scene_plan"] = out.get("scene_plan") or []
             except Exception:
                 pass
 
         # Optional: motion orchestration -> Deforum schedules
-        if bool(user_settings.get("motion_orchestrate") or user_settings.get("enable_motion_orchestration") or user_settings.get("audio_reactive_motion")):
+        if bool(
+            user_settings.get("motion_orchestrate")
+            or user_settings.get("enable_motion_orchestration")
+            or user_settings.get("audio_reactive_motion")
+        ):
             try:
                 from .core.motion_orchestrator import MotionConfig, motion_schedules
+
                 mc = MotionConfig(fps=int(settings.get("fps", 24)))
                 schedules = motion_schedules(analysis, cfg=mc)
                 for k, v in schedules.items():
@@ -186,7 +190,6 @@ class DeforumMusicGenerator:
                 settings["_edmg_motion_enabled"] = True
             except Exception:
                 pass
-
 
         # Optional: derive max_frames from analysis.duration if provided
         try:

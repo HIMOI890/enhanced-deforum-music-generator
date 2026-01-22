@@ -50,8 +50,9 @@ class SemanticAnalysis:
 class AIProviderConfig:
     provider: str = "ollama"
     model: str = "llama3.1:8b"
-    base_url: str = "http://localhost:11434"
+    base_url: Optional[str] = None
     api_key_env: str = "OPENAI_API_KEY"
+    api_key: Optional[str] = None
     timeout: int = 60
     temperature: float = 0.4
     max_tokens: int = 800
@@ -96,7 +97,7 @@ class OpenAIProvider(BaseJSONProvider):
 
     def __init__(self, config: AIProviderConfig):
         self.config = config
-        self.api_key = os.getenv(config.api_key_env)
+        self.api_key = config.api_key or os.getenv(config.api_key_env)
 
     def generate_prompts(self, prompt: str, num_prompts: int) -> List[str]:
         if not (_REQ_OK and requests and self.api_key):
@@ -106,18 +107,27 @@ class OpenAIProvider(BaseJSONProvider):
             "temperature": self.config.temperature,
             "max_tokens": self.config.max_tokens,
             "messages": [
-                {"role": "system", "content": "Respond ONLY with a JSON array of prompt strings."},
+                {"role": "system", "content": "Return a JSON array of prompt strings. No extra text."},
                 {"role": "user", "content": prompt},
             ],
         }
         headers = {"authorization": f"Bearer {self.api_key}"}
-        url = self.config.base_url.rstrip("/") + "/v1/chat/completions"
+        base_url = (self.config.base_url or "https://api.openai.com").rstrip("/")
+        url = base_url + "/v1/chat/completions"
         try:
             resp = requests.post(url, headers=headers, json=payload, timeout=self.config.timeout)
+            if not resp.ok and os.getenv("EDMG_AI_DEBUG"):
+                body = (resp.text or "").replace("\n", " ")[:200]
+                print(f"[ai][openai] status={resp.status_code} body_head={body}")
             resp.raise_for_status()
             data = resp.json()
             content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-            return self._extract_json_list(content)[:num_prompts]
+            prompts = self._extract_json_list(content)
+            if prompts:
+                return prompts[:num_prompts]
+            # Fallback: split non-JSON text into lines if present
+            lines = [l.strip("- \t") for l in content.splitlines() if l.strip()]
+            return lines[:num_prompts]
         except Exception:
             return []
 
@@ -131,7 +141,8 @@ class OllamaProvider(BaseJSONProvider):
     def generate_prompts(self, prompt: str, num_prompts: int) -> List[str]:
         if not (_REQ_OK and requests):
             return []
-        url = self.config.base_url.rstrip("/") + "/api/generate"
+        base_url = (self.config.base_url or "http://localhost:11434").rstrip("/")
+        url = base_url + "/api/generate"
         payload = {
             "model": self.config.model,
             "prompt": prompt + "\nReturn ONLY a JSON array of prompt strings.",
@@ -157,7 +168,8 @@ class LlamaCppProvider(BaseJSONProvider):
     def generate_prompts(self, prompt: str, num_prompts: int) -> List[str]:
         if not (_REQ_OK and requests):
             return []
-        url = self.config.base_url.rstrip("/") + "/completion"
+        base_url = (self.config.base_url or "http://localhost:8080").rstrip("/")
+        url = base_url + "/completion"
         payload = {
             "prompt": prompt + "\nReturn ONLY a JSON array of prompt strings.",
             "temperature": self.config.temperature,
@@ -211,4 +223,3 @@ def build_ai_provider(config: AIProviderConfig) -> AIProvider:
     if provider in {"hf", "huggingface", "transformers"}:
         return HFTransformersProvider(config)
     raise ValueError(f"Unknown AI provider: {config.provider}")
-

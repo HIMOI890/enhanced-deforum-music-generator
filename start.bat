@@ -1,34 +1,53 @@
 @echo off
 setlocal
 
-echo 🎵 Enhanced Deforum Music Generator 🎥
+echo Enhanced Deforum Music Generator
 echo ==================================
 
-REM Activate venv if present
-if exist "venv\Scripts\activate.bat" (
-    echo 📦 Activating virtual environment...
-    call "venv\Scripts\activate.bat"
+REM Root folder of this script
+set "ROOT=%~dp0"
+
+REM Prefer venv python explicitly (most reliable)
+set "PY=%ROOT%venv\Scripts\python.exe"
+
+REM Activate venv if present (optional but helpful)
+if exist "%ROOT%venv\Scripts\activate.bat" (
+    echo Activating virtual environment...
+    call "%ROOT%venv\Scripts\activate.bat"
+) else (
+    echo [WARN] venv not found at "%ROOT%venv"
 )
 
 REM Load .env key=value lines (best-effort)
-if exist ".env" (
-    for /f "usebackq delims=" %%A in (".env") do (
+if exist "%ROOT%.env" (
+    for /f "usebackq delims=" %%A in ("%ROOT%.env") do (
         set "%%A"
     )
 )
 
 REM Ensure folders
-if not exist "data" mkdir data
-if not exist "data\models" mkdir data\models
-if not exist "data\cache" mkdir data\cache
-if not exist "data\logs" mkdir data\logs
-if not exist "output" mkdir output
-if not exist "output\packages" mkdir output\packages
-if not exist "output\analysis" mkdir output\analysis
-if not exist "output\previews" mkdir output\previews
+if not exist "%ROOT%data" mkdir "%ROOT%data"
+if not exist "%ROOT%data\models" mkdir "%ROOT%data\models"
+if not exist "%ROOT%data\cache" mkdir "%ROOT%data\cache"
+if not exist "%ROOT%data\logs" mkdir "%ROOT%data\logs"
+if not exist "%ROOT%output" mkdir "%ROOT%output"
+if not exist "%ROOT%output\packages" mkdir "%ROOT%output\packages"
+if not exist "%ROOT%output\analysis" mkdir "%ROOT%output\analysis"
+if not exist "%ROOT%output\previews" mkdir "%ROOT%output\previews"
 
-echo 🚀 Starting Gradio UI...
-python -m enhanced_deforum_music_generator ui --port 7860
+echo.
+echo Starting Gradio UI...
+echo Using Python: "%PY%"
+echo.
 
-echo 👋 Application stopped.
+REM Always prefer venv python if it exists
+if exist "%PY%" (
+    "%PY%" -m enhanced_deforum_music_generator ui --port 7860
+) else (
+    echo [WARN] venv python not found. Falling back to PATH python.
+    python -m enhanced_deforum_music_generator ui --port 7860
+)
+
+echo.
+echo Application stopped.
 pause
