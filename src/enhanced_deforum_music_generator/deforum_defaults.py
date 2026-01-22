@@ -27,8 +27,15 @@ def make_deforum_settings_template(overrides: Optional[Mapping[str, Any]] = None
     settings = dict(overrides or {})
     return {
             # Run settings
+<<<<<<< HEAD
             "W": settings.get("W", settings.get("width", 1024)),
             "H": settings.get("H", settings.get("height", 576)), 
+=======
+            # Defaults tuned for music-video workflows.
+            # Primary default: 720p @ 30fps (easy to preview/edit, scales upward).
+            "W": settings.get("W", settings.get("width", 1280)),
+            "H": settings.get("H", settings.get("height", 720)),
+>>>>>>> 3595d08 (Initial import)
             "seed": settings.get("seed", -1),
             "sampler": settings.get("sampler", "Euler a"),
             "steps": settings.get("steps", 30),
@@ -80,7 +87,11 @@ def make_deforum_settings_template(overrides: Optional[Mapping[str, Any]] = None
             },
             
             # Video output settings
+<<<<<<< HEAD
             "fps": settings.get("fps", 24),
+=======
+            "fps": settings.get("fps", 30),
+>>>>>>> 3595d08 (Initial import)
             "output_format": "mp4",
             "ffmpeg_location": "ffmpeg",
             "add_soundtrack": "File",

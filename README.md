@@ -58,6 +58,25 @@ The Gradio UI defaults to **“Deforum JSON Expert”** mode:
 - A full Deforum settings template is shown as editable JSON
 - EDMG generates audio-reactive schedules + prompts
 - Your edited template **overrides** the generated output keys when merged
+<<<<<<< HEAD
+=======
+
+## New: Electron "EDMG Studio" (JSON-first)
+
+If you prefer a modern desktop shell, an Electron UI lives here:
+
+```
+desktop/electron
+```
+
+It starts the FastAPI backend automatically and exposes:
+- Audio upload -> analysis (beats/energy)
+- Sync calibration (small global offset)
+- Deforum template editor (full JSON)
+- HF model catalog + download
+
+See `desktop/electron/README.md` for setup.
+>>>>>>> 3595d08 (Initial import)
 - One-click export to a Deforum-ready ZIP package
 
 ## Automatic1111 extension bundle

@@ -26,8 +26,26 @@ class AudioAnalysis:
     filepath: str = ""
     duration: float = 0.0
     tempo_bpm: float = 0.0
+<<<<<<< HEAD
     beat_frames: List[float] = field(default_factory=list)
     energy_segments: List[float] = field(default_factory=list)
+=======
+
+    # Canonical fields used across the codebase
+    beats: List[float] = field(default_factory=list)
+    energy: List[float] = field(default_factory=list)
+
+    # Back-compat aliases seen in older call-sites / earlier prototypes
+    beat_frames: List[float] = field(default_factory=list, repr=False)
+    energy_segments: List[float] = field(default_factory=list, repr=False)
+
+    def __post_init__(self) -> None:
+        # Coerce legacy names into the canonical ones when the new ones are empty.
+        if (not self.beats) and self.beat_frames:
+            self.beats = list(self.beat_frames)
+        if (not self.energy) and self.energy_segments:
+            self.energy = list(self.energy_segments)
+>>>>>>> 3595d08 (Initial import)
 
 
 def _coerce_int(v: Any, default: int) -> int:
@@ -49,6 +67,7 @@ def _normalize_user_overrides(user_settings: Mapping[str, Any]) -> Dict[str, Any
     overrides: Dict[str, Any] = {}
 
     if "W" in user_settings or "width" in user_settings:
+<<<<<<< HEAD
         overrides["W"] = _coerce_int(user_settings.get("W", user_settings.get("width")), 1024)
 
     if "H" in user_settings or "height" in user_settings:
@@ -56,6 +75,15 @@ def _normalize_user_overrides(user_settings: Mapping[str, Any]) -> Dict[str, Any
 
     if "fps" in user_settings:
         overrides["fps"] = _coerce_int(user_settings.get("fps"), 24)
+=======
+        overrides["W"] = _coerce_int(user_settings.get("W", user_settings.get("width")), 1280)
+
+    if "H" in user_settings or "height" in user_settings:
+        overrides["H"] = _coerce_int(user_settings.get("H", user_settings.get("height")), 720)
+
+    if "fps" in user_settings:
+        overrides["fps"] = _coerce_int(user_settings.get("fps"), 30)
+>>>>>>> 3595d08 (Initial import)
 
     if "steps" in user_settings:
         overrides["steps"] = _coerce_int(user_settings.get("steps"), 30)
