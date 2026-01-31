@@ -20,3 +20,9 @@ external/
 
 # Electron UI dependencies
 desktop/electron/node_modules/
+
+# OS / editor
+Thumbs.db
+Desktop.ini
+*.code-workspace
+.vscode/
