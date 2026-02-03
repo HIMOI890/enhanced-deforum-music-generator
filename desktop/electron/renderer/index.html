@@ -75,6 +75,32 @@
         </div>
 
         <div class="panel">
+          <h2>4) JSON Tools</h2>
+          <div class="row">
+            <button class="primary" id="btnSaveJson">Export JSON</button>
+            <button id="btnLoadJson">Import JSON</button>
+          </div>
+          <div class="row">
+            <button id="btnCopyJson">Copy JSON</button>
+            <button id="btnClearLog">Clear logs</button>
+          </div>
+          <div class="hint">Import/Export uses native dialogs. Copy puts the current editor JSON on the clipboard.</div>
+        </div>
+
+        <div class="panel">
+          <h2>5) Utilities</h2>
+          <div class="row">
+            <button id="btnOpenOutputs">Open outputs</button>
+            <button id="btnOpenModels">Open models_store</button>
+          </div>
+          <div class="row">
+            <button id="btnOpenRepo">Open repo root</button>
+            <button id="btnRestartApi">Restart API</button>
+          </div>
+          <div class="hint">Use these helpers to jump to common folders or restart the backend if it gets stuck.</div>
+        </div>
+
+        <div class="panel">
           <h2>Logs</h2>
           <pre id="log"></pre>
         </div>

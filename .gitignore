@@ -17,3 +17,6 @@ cache/
 
 # external apps (DON'T commit these)
 external/
+
+# Electron UI dependencies
+desktop/electron/node_modules/
