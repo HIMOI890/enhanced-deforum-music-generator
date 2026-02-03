@@ -9,6 +9,8 @@ Deforum settings JSON editor with:
 - Sync calibration (estimates a small audio->video offset)
 - Bundled Hugging Face video model catalog + downloader
 - One-click generation of a complete Deforum settings JSON
+- Quick utilities to open common folders (outputs, models_store, repo root)
+- Restart button for the backend API
 
 ## Run
 
