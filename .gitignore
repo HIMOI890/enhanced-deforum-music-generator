@@ -1,8 +1,26 @@
 ﻿# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
 .pytest_cache/
 *.log
+
+# Python packaging / build
+.Python
+build/
+dist/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+pip-wheel-metadata/
 
 # venv
 venv/
